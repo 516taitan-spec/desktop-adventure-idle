@@ -133,6 +133,22 @@ class GameUI {
             }
         });
 
+        // Auto-save on page hide or visibility change
+        const saveOnUnload = () => {
+            if (this.game && this.game.state) {
+                this.game.state.lastSaved = Date.now();
+                window.saveGame(this.game.state);
+            }
+        };
+
+        window.addEventListener('pagehide', saveOnUnload);
+        window.addEventListener('beforeunload', saveOnUnload);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                saveOnUnload();
+            }
+        });
+
         // Speed Multiplier Toggles
         const speedBtns = document.querySelectorAll('.speed-btn');
         speedBtns.forEach(btn => {
@@ -848,6 +864,7 @@ class GameUI {
                         this.renderSkills();
                         this.renderStats();
                         this.showToast(`${skill.name} のレベルを上げました！🌟`);
+                        window.saveGame(this.game.state);
                     }
                 });
             }
@@ -944,6 +961,7 @@ class GameUI {
                         this.renderInventory();
                         this.renderEquipped();
                         this.showToast(`装備の強化に成功しました！ (+${item.enhancement}) 🛠️`);
+                        window.saveGame(this.game.state);
                     } else {
                         this.showToast(res.reason, "error");
                     }
@@ -1011,6 +1029,7 @@ class GameUI {
                             const rColor = this.game.getRarityColor(res.item.rarity);
                             this.addLog(`🛠️ 鍛冶屋クラフト: **[${res.item.name}]** (Lv.${res.item.level}) を鋳造しました！`, rColor);
                             this.showToast(`クラフト成功: ${res.item.name} 💎`);
+                            window.saveGame(this.game.state);
                         } else {
                             this.showToast(res.reason, "error");
                         }
@@ -1101,6 +1120,7 @@ class GameUI {
                         this.renderTranscend();
                         this.renderStats();
                         this.showToast(`${upg.name} を強化しました！ 🌌`);
+                        window.saveGame(this.game.state);
                     }
                 });
             }

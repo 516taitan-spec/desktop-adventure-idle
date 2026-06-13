@@ -54,7 +54,7 @@ class IdleGame {
         this.saveInterval = setInterval(() => {
             saveGame(this.state);
             if (this.ui) this.ui.showToast("オートセーブ完了 💾");
-        }, 30000); // Save every 30 seconds
+        }, 15000); // Save every 15 seconds
     }
 
     initFromState() {
@@ -487,6 +487,7 @@ class IdleGame {
                 this.ui.addLog(`🎉 ステージクリア！ 次のステージ「ステージ ${this.state.stage}」が解放された！`, "#22c55e");
                 this.ui.renderStats();
             }
+            saveGame(this.state);
         } else {
             this.state.wave++;
         }
@@ -526,11 +527,13 @@ class IdleGame {
     gainExp(amount) {
         this.state.exp += amount;
         let req = this.getExpRequired();
+        let leveledUp = false;
         
         while (this.state.exp >= req) {
             this.state.exp -= req;
             this.state.level++;
             this.state.skillPoints++;
+            leveledUp = true;
             
             gameAudio.playLevelUp();
             if (this.ui) {
@@ -539,6 +542,10 @@ class IdleGame {
             }
             this.recalculatePlayerStats();
             req = this.getExpRequired();
+        }
+        
+        if (leveledUp) {
+            saveGame(this.state);
         }
         
         if (this.ui) this.ui.renderStats();
@@ -577,6 +584,7 @@ class IdleGame {
             this.ui.renderEquipped();
             this.ui.showToast(`${item.name} を装備しました ⚔️`);
         }
+        saveGame(this.state);
     }
 
     // Unequip an item
@@ -600,6 +608,7 @@ class IdleGame {
             this.ui.renderEquipped();
             this.ui.showToast(`${item.name} を外しました 🛡️`);
         }
+        saveGame(this.state);
     }
 
     // Sell item for gold
@@ -618,6 +627,7 @@ class IdleGame {
             this.ui.renderStats();
             this.ui.showToast(`${item.name} を売却しました (+🪙${item.goldValue.toLocaleString()})`);
         }
+        saveGame(this.state);
     }
 
     // Salvage/Scrap item
@@ -639,6 +649,7 @@ class IdleGame {
             this.ui.renderStats();
             this.ui.showToast(`${item.name} を分解しました (+🔥${res.scrap} | +🪙${res.gold})`);
         }
+        saveGame(this.state);
     }
 
     // Multi salvage
@@ -682,6 +693,7 @@ class IdleGame {
             this.ui.renderStats();
             this.ui.showToast(`${count}個 の装備を分解しました (+🔥${scrapGained} | +🪙${goldGained})`);
         }
+        saveGame(this.state);
     }
 
     // Transcendence / Rebirth (転生)

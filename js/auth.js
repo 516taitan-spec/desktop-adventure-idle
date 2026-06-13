@@ -2,7 +2,7 @@
 // Handles JWT storage, server APIs, and conflict resolution between local and cloud states.
 
 const AUTH_TOKEN_KEY = "desktop_cozy_adventure_token";
-const CLOUD_SYNC_INTERVAL = 30000; // 30 seconds
+const CLOUD_SYNC_INTERVAL = 15000; // 15 seconds
 
 class AuthManager {
     constructor() {
@@ -170,7 +170,8 @@ class AuthManager {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${this.token}`
                 },
-                body: JSON.stringify({ gameState })
+                body: JSON.stringify({ gameState }),
+                keepalive: true
             });
 
             if (response.ok) {
