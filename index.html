@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>放置ゲーム</title>
+    <meta name="description" content="ブラウザで手軽に遊べる本格派ハクスラ放置ゲーム。ランダムドロップ、スキルツリー、転生、鍛冶屋要素満載！">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <!-- Main Game Workspace -->
+    <main id="game-container">
+
+        <!-- ==================== LEFT PANEL: CHARACTER STATS & EQUIPMENT ==================== -->
+        <section id="character-panel" class="glass-panel">
+            <header class="char-header">
+                <h1 class="char-title">試作放置ゲーム</h1>
+                <span id="player-level">Lv.1</span>
+            </header>
+
+            <!-- HP / EXP Profile Bars -->
+            <div class="char-details-card">
+                <div class="profile-hp-bar-outer">
+                    <div id="player-hp-bar" class="profile-hp-bar-inner"></div>
+                    <span id="player-hp-text" class="profile-hp-text">100 / 100</span>
+                </div>
+                <div class="profile-exp-bar-outer">
+                    <div id="player-exp-bar" class="profile-exp-bar-inner"></div>
+                    <span id="player-exp-text" class="profile-exp-text">EXP: 0 / 100</span>
+                </div>
+            </div>
+
+            <!-- RPG Attributes -->
+            <div class="stats-list">
+                <div class="stat-row">
+                    <span class="stat-name">⚔️ 攻撃力</span>
+                    <span id="stat-val-atk" class="stat-value">10</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-name">🛡️ 防御力</span>
+                    <span id="stat-val-def" class="stat-value">3</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-name">❤️ 最大HP</span>
+                    <span id="stat-val-hp" class="stat-value">100</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-name">🍃 攻撃速度</span>
+                    <span id="stat-val-speed" class="stat-value">100%</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-name">🎯 クリティカル率</span>
+                    <span id="stat-val-crit" class="stat-value">5%</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-name">💥 クリティカル威力</span>
+                    <span id="stat-val-critdmg" class="stat-value">150%</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-name">🩸 吸血率</span>
+                    <span id="stat-val-lifesteal" class="stat-value">0%</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-name">🍀 魔法発見力 (MF)</span>
+                    <span id="stat-val-mf" class="stat-value">+0%</span>
+                </div>
+            </div>
+
+            <!-- Equipped Slots -->
+            <h2 class="equip-slot-title">装備スロット</h2>
+            <div class="equip-slots-container">
+                <div id="slot-weapon" class="equip-slot-card empty"></div>
+                <div id="slot-armor" class="equip-slot-card empty"></div>
+                <div id="slot-shield" class="equip-slot-card empty"></div>
+                <div id="slot-ring" class="equip-slot-card empty"></div>
+                <div id="slot-amulet" class="equip-slot-card empty"></div>
+            </div>
+        </section>
+
+
+        <!-- ==================== CENTER PANEL: ACTIVE COMBAT BOARD ==================== -->
+        <section id="battle-panel">
+
+            <!-- Stage Map Progress Header -->
+            <div class="stage-header glass-panel">
+                <span id="stage-name">第 1 関門 : 囁きの森林</span>
+                <div class="stage-header-right">
+                    <span id="stage-wave-text" style="margin-right: 4px;">Wave 1/10</span>
+                    <div class="speed-toggle-group">
+                        <button class="speed-btn active" data-speed="1">x1</button>
+                        <button class="speed-btn" data-speed="2">x2</button>
+                        <button class="speed-btn" data-speed="3">x3</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Battle Card Arena -->
+            <div id="battle-arena" class="glass-panel">
+                <div class="battle-grid">
+
+                    <!-- Player Card -->
+                    <div id="player-card" class="combat-card">
+                        <div class="card-name">冒険者 (あなた)</div>
+                        <div class="card-avatar">🧙‍♂️</div>
+                        <div id="player-cp" class="card-cp">戦闘力: 0</div>
+                        <div class="hp-status-block">
+                            <div class="gauge-bar-outer">
+                                <div id="player-gauge-bar" class="gauge-bar-inner"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="versus-sign">VS</div>
+
+                    <!-- Enemy Card -->
+                    <div id="enemy-card" class="combat-card">
+                        <div id="enemy-name" class="card-name">ウッドゴブリン</div>
+                        <div class="card-avatar">👹</div>
+                        <div id="enemy-cp" class="card-cp">戦闘力: 0</div>
+                        <div class="hp-status-block">
+                            <div class="hp-bar-outer">
+                                <div id="enemy-hp-bar" class="hp-bar-inner"></div>
+                            </div>
+                            <span id="enemy-hp-text" class="hp-text">50 / 50</span>
+                            <div class="gauge-bar-outer">
+                                <div id="enemy-gauge-bar" class="gauge-bar-inner"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- click speed booster hint -->
+                <div class="arena-click-hint">☝️ 画面をクリックして加速突撃！ (追加ダメージ & 速度上昇)</div>
+            </div>
+
+            <!-- Warm scrolling real-time battle logs -->
+            <div id="combat-logs" class="glass-panel">
+                <div class="log-entry" style="color: #38bdf8;">⛺ キャンプで装備を整え、無限にスケールする冒険を開始した！</div>
+            </div>
+        </section>
+
+
+        <!-- ==================== RIGHT PANEL: INTERACTION WINDOW ==================== -->
+        <section id="interact-panel" class="glass-panel">
+
+            <!-- Elegant Navigation Tabs -->
+            <nav class="tabs-header">
+                <button class="tab-btn active" data-tab="inventory">🎒 装備</button>
+                <button class="tab-btn" data-tab="skills">🌟 スキル</button>
+                <button class="tab-btn" data-tab="forge">🛠️ 鍛冶</button>
+                <button class="tab-btn" data-tab="transcend">🌌 転生</button>
+                <button class="tab-btn" data-tab="stats">⚙️ その他</button>
+            </nav>
+
+            <!-- Tabs viewport panel -->
+            <div class="tabs-content">
+
+                <!-- TAB: INVENTORY -->
+                <div id="inventory-tab" class="tab-panel active">
+                    <div class="inventory-header">
+                        <span class="inventory-sub">インベントリ (<span id="inventory-count">0 / 40</span>)</span>
+                        <button id="auto-equip-btn" class="bulk-btn"
+                            style="padding: 4px 10px; max-width: 100px; margin-left: auto; background: rgba(34, 197, 94, 0.08); border-color: rgba(34, 197, 94, 0.3); color: #4ade80; cursor: pointer;">一括装備
+                            ⚔️</button>
+                    </div>
+                    <div id="inventory-grid">
+                        <!-- Slots filled programmatically -->
+                    </div>
+                    <div class="bulk-salvage-box">
+                        <span class="bulk-title">一括分解 (残り火の破片を回収)</span>
+                        <div class="bulk-buttons">
+                            <button id="bulk-salvage-common" class="bulk-btn">コモン (白)</button>
+                            <button id="bulk-salvage-uncommon" class="bulk-btn">アンコモン (緑)</button>
+                            <button id="bulk-salvage-rare" class="bulk-btn">レア以下 (青)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: SKILLS -->
+                <div id="skills-tab" class="tab-panel">
+                    <div class="inventory-header">
+                        <span id="skill-points" class="inventory-sub">スキルポイント: 0</span>
+                    </div>
+                    <div id="skills-grid">
+                        <!-- Filled dynamically -->
+                    </div>
+                </div>
+
+                <!-- TAB: FORGE -->
+                <div id="forge-tab" class="tab-panel">
+                    <div class="inventory-header">
+                        <span class="inventory-sub">装備の精錬＆鋳造</span>
+                    </div>
+                    <!-- Active upgrade card slot -->
+                    <div id="forge-upgrade-card">
+                        <!-- Filled dynamically -->
+                    </div>
+                    <!-- Craft slots -->
+                    <div class="inventory-header" style="margin-top: 8px;">
+                        <span class="inventory-sub">シャードクラフト (残り火を使用)</span>
+                    </div>
+                    <div id="forge-craft-grid">
+                        <!-- Filled dynamically -->
+                    </div>
+                </div>
+
+                <!-- TAB: TRANSCEND -->
+                <div id="transcend-tab" class="tab-panel">
+                    <div class="transcend-header-card">
+                        <h3>🌌 魂の超越と転生ショップ</h3>
+                        <p>進行が壁にぶつかった時、転生して「エーテル結晶」を獲得できます。<br>結晶を消費して神話級の永続ボーナスを購入しましょう！</p>
+                    </div>
+                    <div class="inventory-header">
+                        <span id="transcend-crystals" class="inventory-sub">エーテル結晶: 💎 0</span>
+                    </div>
+                    <div id="transcend-shop">
+                        <!-- Filled dynamically -->
+                    </div>
+                    <button id="transcend-btn" class="disabled">🪐 魂の転生を実行する</button>
+                </div>
+
+                <!-- TAB: SETTINGS & STATS -->
+                <div id="stats-tab" class="tab-panel">
+                    <div class="inventory-header">
+                        <span class="inventory-sub">アカウント設定 (クラウドセーブ)</span>
+                    </div>
+                    <div class="settings-box" id="auth-panel" style="margin-bottom: 16px;">
+                        <div id="auth-logged-out">
+                            <p style="margin: 0 0 10px 0; font-size: 0.85em; color: #94a3b8; line-height: 1.4;">
+                                アカウントを作成してログインすると、セーブデータをサーバーに自動で保存し、別のブラウザや端末からでも再開できるようになります。</p>
+                            <button id="auth-show-login-btn" class="settings-btn"
+                                style="width: 100%; font-weight: bold; background: rgba(56, 189, 248, 0.08); border-color: rgba(56, 189, 248, 0.3); color: #38bdf8;">🔑
+                                ログイン / アカウント作成</button>
+                        </div>
+                        <div id="auth-logged-in" style="display: none;">
+                            <div class="settings-row">
+                                <span class="settings-label">ユーザー名</span>
+                                <span id="auth-username" class="stat-value"
+                                    style="color: #38bdf8; font-weight: bold;">-</span>
+                            </div>
+                            <div class="settings-row">
+                                <span class="settings-label">状態</span>
+                                <span id="auth-sync-status" class="stat-value"
+                                    style="color: #4ade80; font-size: 0.9em;">☁️ 同期完了</span>
+                            </div>
+                            <div style="display: flex; gap: 8px; margin-top: 10px;">
+                                <button id="auth-manual-sync-btn" class="settings-btn"
+                                    style="flex: 1; font-size: 0.85em;">手動同期</button>
+                                <button id="auth-logout-btn" class="settings-btn btn-danger"
+                                    style="flex: 1; font-size: 0.85em;">ログアウト</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="inventory-header">
+                        <span class="inventory-sub">ゲーム設定 & 記録統計</span>
+                    </div>
+                    <div class="settings-box" style="margin-bottom: 16px;">
+                        <div class="settings-row">
+                            <span class="settings-label">サウンド設定</span>
+                            <button id="mute-btn" class="settings-btn">🔊 音あり</button>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">戦利品の自動売却</span>
+                            <select id="auto-sell-select" class="settings-select">
+                                <option value="none">自動売却しない</option>
+                                <option value="common">コモンのみ</option>
+                                <option value="uncommon">コモン・アンコモン</option>
+                            </select>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">セーブの初期化</span>
+                            <button id="reset-btn" class="settings-btn btn-danger">完全に最初からやり直す</button>
+                        </div>
+                    </div>
+                    <div class="inventory-header">
+                        <span class="inventory-sub">生涯アチーブメント記録</span>
+                    </div>
+                    <div class="settings-box">
+                        <div class="settings-row">
+                            <span class="settings-label">討伐エネミー総数</span>
+                            <span id="stat-kills" class="stat-value">0</span>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">最高クリア関門ステージ</span>
+                            <span id="stat-boss-kills" class="stat-value">1</span>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">累計獲得ゴールド</span>
+                            <span id="stat-total-gold" class="stat-value">0</span>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">累計回収残り火シャード</span>
+                            <span id="stat-total-scrap" class="stat-value">0</span>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">累計獲得エーテル結晶</span>
+                            <span id="stat-total-crystals" class="stat-value">0</span>
+                        </div>
+                        <div class="settings-row">
+                            <span class="settings-label">累計プレイ時間</span>
+                            <span id="stat-time-played" class="stat-value">0</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==================== OFFLINE CALCULATION REPORT MODAL ==================== -->
+    <div id="offline-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h2>💤 放置中の戦果報告</h2>
+            <p class="modal-desc">あなたがいない間、冒険者がキャンプの周りで休むことなく魔物と戦いました！</p>
+            <div class="modal-stats-list">
+                <div class="modal-stat-item">
+                    <span>放置時間:</span>
+                    <span id="offline-duration" class="stat-value" style="color:var(--c-primary)">0時間 0分</span>
+                </div>
+                <div class="modal-stat-item">
+                    <span>討伐した魔物数:</span>
+                    <span id="offline-battles" class="stat-value">0 体</span>
+                </div>
+                <div class="modal-stat-item">
+                    <span>獲得したゴールド:</span>
+                    <span id="offline-gold" class="stat-value" style="color:var(--c-primary)">🪙 0</span>
+                </div>
+                <div class="modal-stat-item">
+                    <span>獲得した経験値:</span>
+                    <span id="offline-exp" class="stat-value" style="color:#60a5fa">✨ 0</span>
+                </div>
+                <div class="modal-stat-item">
+                    <span>獲得した装備品:</span>
+                    <span id="offline-items" class="stat-value" style="color:#c084fc">0 個</span>
+                </div>
+            </div>
+            <button id="offline-close" class="forge-main-btn" style="width:100%">キャンプ地に戻る ⛺</button>
+        </div>
+    </div>
+
+    <!-- ==================== AUTHENTICATION MODAL ==================== -->
+    <div id="auth-modal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 400px;">
+            <h2 id="auth-modal-title">🔑 ログイン</h2>
+            <p id="auth-modal-desc" class="modal-desc">アカウント情報を入力してください。</p>
+
+            <div class="auth-form-group" style="margin-bottom: 12px; text-align: left;">
+                <label for="auth-input-username"
+                    style="display: block; margin-bottom: 6px; font-size: 0.85em; color: #94a3b8;">ユーザー名
+                    (3〜20文字)</label>
+                <input type="text" id="auth-input-username" placeholder="ユーザー名を入力"
+                    style="width: 100%; padding: 10px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white; box-sizing: border-box;">
+            </div>
+
+            <div class="auth-form-group" style="margin-bottom: 16px; text-align: left;">
+                <label for="auth-input-password"
+                    style="display: block; margin-bottom: 6px; font-size: 0.85em; color: #94a3b8;">パスワード (6文字以上)</label>
+                <input type="password" id="auth-input-password" placeholder="パスワードを入力"
+                    style="width: 100%; padding: 10px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white; box-sizing: border-box;">
+            </div>
+
+            <div id="auth-error-msg"
+                style="color: #ef4444; font-size: 0.85em; margin-bottom: 16px; text-align: left; display: none; background: rgba(239, 68, 68, 0.1); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.2);">
+            </div>
+
+            <button id="auth-submit-btn" class="forge-main-btn" style="width: 100%; margin-bottom: 12px;">ログイン</button>
+
+            <div style="text-align: center; font-size: 0.85em; margin-top: 10px;">
+                <span id="auth-toggle-desc" style="color: #94a3b8;">アカウントをお持ちでないですか？</span>
+                <a href="#" id="auth-toggle-mode-btn"
+                    style="color: #38bdf8; text-decoration: none; font-weight: bold; margin-left: 4px;">新規登録</a>
+            </div>
+
+            <button id="auth-close-btn" class="settings-btn"
+                style="width: 100%; margin-top: 16px; border: 1px solid rgba(255,255,255,0.1);">閉じる</button>
+        </div>
+    </div>
+
+    <!-- Core App Bootstrapping sequential scripts for local execution support -->
+    <script src="js/audio.js"></script>
+    <script src="js/loot.js"></script>
+    <script src="js/skills.js"></script>
+    <script src="js/forge.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/ui.js"></script>
+    <script>
+        window.addEventListener('DOMContentLoaded', async () => {
+            const game = new IdleGame();
+            window.game = game; // Expose globally for auth sync reference
+            const ui = new GameUI(game);
+            game.setUI(ui);
+
+            // Initialize auth session and load cloud save if logged in
+            if (window.auth) {
+                await window.auth.init();
+            }
+
+            // High precision game loop with performance delta calculations
+            let lastTime = performance.now();
+            function gameLoop(currentTime) {
+                const dt = (currentTime - lastTime) / 1000;
+                lastTime = currentTime;
+
+                // Tick game logic (limit dt to max 1.0 to prevent freeze crashes)
+                game.tick(Math.min(1.0, dt));
+
+                requestAnimationFrame(gameLoop);
+            }
+            requestAnimationFrame(gameLoop);
+
+            // Handle audio context initialization on first interaction
+            const resumeAudio = () => {
+                if (window.gameAudio) {
+                    window.gameAudio.resume();
+                }
+                document.body.removeEventListener('click', resumeAudio);
+                document.body.removeEventListener('touchstart', resumeAudio);
+            };
+            document.body.addEventListener('click', resumeAudio);
+            document.body.addEventListener('touchstart', resumeAudio);
+        });
+    </script>
+</body>
+
+</html>

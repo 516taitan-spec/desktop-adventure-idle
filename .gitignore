@@ -1,0 +1,6 @@
+node_modules/
+game_data.db
+game_data.db-shm
+game_data.db-wal
+.DS_Store
+.env
