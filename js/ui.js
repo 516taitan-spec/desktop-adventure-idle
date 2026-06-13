@@ -126,6 +126,13 @@ class GameUI {
             }
         });
 
+        // Close right-click menu when right-clicking elsewhere
+        document.addEventListener('contextmenu', (e) => {
+            if (!e.target.closest('.inventory-slot')) {
+                this.hideRightClickMenu();
+            }
+        });
+
         // Speed Multiplier Toggles
         const speedBtns = document.querySelectorAll('.speed-btn');
         speedBtns.forEach(btn => {
@@ -582,6 +589,13 @@ class GameUI {
                     this.selectedInventoryItem = item;
                     this.showActionMenu(slot, item);
                 });
+
+                // Right-click shortcut popup (Sell / Scrap)
+                slot.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.showRightClickMenu(e.pageX, e.pageY, item);
+                });
             } else {
                 slot.innerHTML = "";
             }
@@ -680,6 +694,53 @@ class GameUI {
 
     hideActionMenu() {
         const oldMenu = document.getElementById('inventory-action-menu');
+        if (oldMenu) oldMenu.remove();
+        this.hideRightClickMenu();
+    }
+
+    showRightClickMenu(x, y, item) {
+        this.hideActionMenu();
+        this.hideRightClickMenu();
+
+        // Create elegant floating context menu next to the cursor
+        const menu = document.createElement('div');
+        menu.id = "inventory-right-click-menu";
+        menu.className = "action-menu-popup";
+        
+        menu.innerHTML = `
+            <button class="menu-action-btn scrap-act">分解する (🔥+${item.scrapValue})</button>
+            <button class="menu-action-btn sell-act">売却する (🪙+${item.goldValue})</button>
+        `;
+
+        document.body.appendChild(menu);
+
+        // Position it exactly at client mouse coordinates
+        menu.style.position = 'absolute';
+        menu.style.top = `${y}px`;
+        menu.style.left = `${x}px`;
+        menu.style.zIndex = "10001"; // Keep it above normal modals if any
+
+        // Prevent tooltip from showing or hiding on this menu
+        menu.addEventListener('mouseenter', () => this.hideTooltip());
+
+        // Event hooks
+        menu.querySelector('.scrap-act').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.game.scrapItem(item);
+            this.hideRightClickMenu();
+            this.hideTooltip();
+        });
+
+        menu.querySelector('.sell-act').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.game.sellItem(item);
+            this.hideRightClickMenu();
+            this.hideTooltip();
+        });
+    }
+
+    hideRightClickMenu() {
+        const oldMenu = document.getElementById('inventory-right-click-menu');
         if (oldMenu) oldMenu.remove();
     }
 

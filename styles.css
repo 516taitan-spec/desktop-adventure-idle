@@ -1318,12 +1318,14 @@ body::before {
 .item-tooltip {
     min-width: 250px;
     max-width: 320px;
-    background: rgba(12, 10, 9, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: #0d0b0a !important;
+    border: 1.5px solid rgba(245, 158, 11, 0.4) !important;
     border-radius: 12px;
     padding: 12px;
     display: flex;
     flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.95) !important;
+    backdrop-filter: none !important;
 }
 
 .tooltip-header {
