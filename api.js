@@ -4,7 +4,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { getDB } = require('./db');
+const db = require('./db');
 
 const router = express.Router();
 
@@ -33,7 +33,7 @@ function authenticateToken(req, res, next) {
 
 // ─────────────────── POST /api/register ───────────────────
 
-router.post('/register', (req, res) => {
+router.post('/register', async (req, res) => {
     const { username, password } = req.body;
 
     // Validation
@@ -55,67 +55,74 @@ router.post('/register', (req, res) => {
         return res.status(400).json({ error: 'パスワードは6文字以上にしてください。' });
     }
 
-    const db = getDB();
+    try {
+        // Check if username already exists
+        const existing = await db.findUser(trimmedUsername);
+        if (existing) {
+            return res.status(409).json({ error: 'そのユーザー名はすでに使用されています。' });
+        }
 
-    // Check if username already exists
-    const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(trimmedUsername);
-    if (existing) {
-        return res.status(409).json({ error: 'そのユーザー名はすでに使用されています。' });
+        // Hash password and insert
+        const salt = bcrypt.genSaltSync(10);
+        const passwordHash = bcrypt.hashSync(password, salt);
+
+        const result = await db.createUser(trimmedUsername, passwordHash);
+
+        // Generate JWT
+        const token = jwt.sign(
+            { id: result.id, username: trimmedUsername },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES_IN }
+        );
+
+        res.status(201).json({
+            message: 'アカウントが作成されました！',
+            token,
+            user: { id: result.id, username: trimmedUsername }
+        });
+    } catch (err) {
+        console.error('Registration error:', err);
+        res.status(500).json({ error: 'アカウント作成中にエラーが発生しました。' });
     }
-
-    // Hash password and insert
-    const salt = bcrypt.genSaltSync(10);
-    const passwordHash = bcrypt.hashSync(password, salt);
-
-    const result = db.prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)').run(trimmedUsername, passwordHash);
-
-    // Generate JWT
-    const token = jwt.sign(
-        { id: result.lastInsertRowid, username: trimmedUsername },
-        JWT_SECRET,
-        { expiresIn: JWT_EXPIRES_IN }
-    );
-
-    res.status(201).json({
-        message: 'アカウントが作成されました！',
-        token,
-        user: { id: result.lastInsertRowid, username: trimmedUsername }
-    });
 });
 
 // ─────────────────── POST /api/login ───────────────────
 
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
         return res.status(400).json({ error: 'ユーザー名とパスワードは必須です。' });
     }
 
-    const db = getDB();
-    const user = db.prepare('SELECT id, username, password_hash FROM users WHERE username = ?').get(username.trim());
+    try {
+        const user = await db.findUser(username.trim());
 
-    if (!user) {
-        return res.status(401).json({ error: 'ユーザー名またはパスワードが間違っています。' });
+        if (!user) {
+            return res.status(401).json({ error: 'ユーザー名またはパスワードが間違っています。' });
+        }
+
+        const passwordMatch = bcrypt.compareSync(password, user.password_hash);
+        if (!passwordMatch) {
+            return res.status(401).json({ error: 'ユーザー名またはパスワードが間違っています。' });
+        }
+
+        // Generate JWT
+        const token = jwt.sign(
+            { id: user.id, username: user.username },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES_IN }
+        );
+
+        res.json({
+            message: 'ログイン成功！',
+            token,
+            user: { id: user.id, username: user.username }
+        });
+    } catch (err) {
+        console.error('Login error:', err);
+        res.status(500).json({ error: 'ログイン処理中にエラーが発生しました。' });
     }
-
-    const passwordMatch = bcrypt.compareSync(password, user.password_hash);
-    if (!passwordMatch) {
-        return res.status(401).json({ error: 'ユーザー名またはパスワードが間違っています。' });
-    }
-
-    // Generate JWT
-    const token = jwt.sign(
-        { id: user.id, username: user.username },
-        JWT_SECRET,
-        { expiresIn: JWT_EXPIRES_IN }
-    );
-
-    res.json({
-        message: 'ログイン成功！',
-        token,
-        user: { id: user.id, username: user.username }
-    });
 });
 
 // ─────────────────── GET /api/me ───────────────────
@@ -126,44 +133,39 @@ router.get('/me', authenticateToken, (req, res) => {
 
 // ─────────────────── GET /api/save ───────────────────
 
-router.get('/save', authenticateToken, (req, res) => {
-    const db = getDB();
-    const row = db.prepare('SELECT game_state, updated_at FROM save_data WHERE user_id = ?').get(req.user.id);
-
-    if (!row) {
-        return res.json({ exists: false, gameState: null });
-    }
-
+router.get('/save', authenticateToken, async (req, res) => {
     try {
+        const row = await db.getSaveData(req.user.id);
+
+        if (!row) {
+            return res.json({ exists: false, gameState: null });
+        }
+
         const gameState = JSON.parse(row.game_state);
         res.json({ exists: true, gameState, updatedAt: row.updated_at });
     } catch (e) {
+        console.error('Get save error:', e);
         res.json({ exists: false, gameState: null });
     }
 });
 
 // ─────────────────── POST /api/save ───────────────────
 
-router.post('/save', authenticateToken, (req, res) => {
+router.post('/save', authenticateToken, async (req, res) => {
     const { gameState } = req.body;
 
     if (!gameState) {
         return res.status(400).json({ error: 'セーブデータが含まれていません。' });
     }
 
-    const db = getDB();
-    const gameStateJSON = JSON.stringify(gameState);
-
-    // UPSERT: insert or update
-    db.prepare(`
-        INSERT INTO save_data (user_id, game_state, updated_at) 
-        VALUES (?, ?, CURRENT_TIMESTAMP)
-        ON CONFLICT(user_id) DO UPDATE SET 
-            game_state = excluded.game_state,
-            updated_at = CURRENT_TIMESTAMP
-    `).run(req.user.id, gameStateJSON);
-
-    res.json({ message: 'セーブ完了！', savedAt: new Date().toISOString() });
+    try {
+        const gameStateJSON = JSON.stringify(gameState);
+        await db.saveData(req.user.id, gameStateJSON);
+        res.json({ message: 'セーブ完了！', savedAt: new Date().toISOString() });
+    } catch (err) {
+        console.error('Save error:', err);
+        res.status(500).json({ error: 'セーブデータの保存中にエラーが発生しました。' });
+    }
 });
 
 module.exports = router;
